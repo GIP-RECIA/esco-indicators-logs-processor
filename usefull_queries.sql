@@ -12,4 +12,5 @@ select distinct(nomservice) from connexionservicejour;
 select distinct(truncatedfname) from connexionservicejour;
 
 ##### Update services names #####
- update connexionservicejour set nomservice = 'Gestion des comptes' where nomservice = 'Mon compte ENT'
+select count(*) from connexionservicejour where nomservice = 'Listes de diffusions Clg du 37';
+update connexionservicejour set nomservice = 'Listes de diffusions' where nomservice = 'Listes de diffusions Clg du 37';

@@ -39,7 +39,7 @@ CREATE TABLE connexionservicejour (
     nomservice varchar(64) NOT NULL,
     jour date NOT NULL,
     nbconnexionservice integer,
-    PRIMARY KEY (uid, nomprofil, uai, nomservice, jour),
+    PRIMARY KEY (uid, nomprofil, uai, truncatedfname, jour),
     FOREIGN KEY (uai) REFERENCES etablissement(uai)
 );
 CREATE TABLE est_activee (
