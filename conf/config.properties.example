@@ -1,34 +1,37 @@
-
-#Données de la BD
-nombase=postgres
-port=5432
-user=XXXXXXXXXXX
-password=XXXXXXXXXXXXX
+#DonnÃ©es de la BD
+conf.db.url=jdbc:postgresql://*****:5432/indicateurs_usages
+conf.db.user=*****
+conf.db.password=*****
 
 
 #Connecteur LDAP
-ldap.url=XXXXXXXXXXXXXXXXXXXX
-ldap.user=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-ldap.password=XXXXXXXXXXXXXXXX
+conf.ldap.url=ldap://*****:389
+conf.ldap.user=cn=*****, ou=*****, dc=*****,dc=*****
+conf.ldap.password=*****
 
-ldap.baseDn=dc=esco-centre,dc=fr
-ldap.brancheStructure=structures
-ldap.branchePersonne=people
+conf.ldap.baseDn=dc=*****,dc=*****
+conf.ldap.brancheStructure=*****
+conf.ldap.branchePeople=*****
 
+#The number of thread for connecting to LDAP
+conf.ldap.threadCount=8
+#The number of etabs to load in memory by thread
+conf.ldap.thread.etabCount=5
 
-#Type d'établissement a prendre en compte par semaine (attention pas d'espace après les virgules)
-semaine=CFA,LEGTA
-#Durée par défaut d'une connexion sans fin (temps en minutes)
-dureeDefaut=30
+#Type d'Ã©tablissement a prendre en compte par semaine (attention pas d'espace aprÃ¨s les virgules)
+# InutilisÃ© pour le moment : tous les etabs sont calculÃ©s par mois et par semaine.
+conf.weekBased.etab.types=CFA
+#DurÃ©e par dÃ©faut d'une connexion sans fin (temps en minutes)
+conf.default.session.time=90
 
 #Format des logs (jour ou mois)
-# jour : de minuit à minuit pour le jour à lire + un bout du jour apres pour recuperer les fins de sessions
-# mois : du 1er 00h au dernier OOh + un bout du premier jour du mois d'après pour recuperer les fins de sessions
-date=mois
+# DAYLY : de minuit Ã  minuit pour le jour Ã  lire + un bout du jour apres pour recuperer les fins de sessions
+# MONTHLY : du 1er 00h au dernier OOh + un bout du premier jour du mois d'aprÃ¨s pour recuperer les fins de sessions
+conf.processing.mode=MONTHLY
 
-#Mode du traitement mensuel et hebdomadaire
-#Automatique pour verifier si on doit faire le traitement tous les jours et si on est le 1er d'un mois et un lundi, on verifie si il y a un trou dans les données et on stoppe si c'est le cas, sinon on fait le traitement
-#Mois pour lancer manuellement le traitement pour un mois ( le mois doit être placé en argument, etre de la forme YYYY-MM-DD et ne pas avoir été déjà traité ) 
-#Semaine pour lancer manuellement le traitement pour une semaine ( le premier jour de la semaine doit être placé en argument, etre de la forme YYYY-MM-DD et la semaine ne doit  pas avoir été déjà traitée ) 
-mode=Automatique
+#Mode du traitement mensuel et hebdomadaire (argument d'appel du bacth)
+#AUTO Compression automatique
+#WEEK Force la compression pour une semaine date donnÃ©e mÃªme si il manque des jours ... (irreversible)
+#MONTH Force la compression pour un mois date donnÃ©e mÃªme si il manque des jours ... (irreversible)
+#OFF Compression dÃ©sactivÃ©e
 
