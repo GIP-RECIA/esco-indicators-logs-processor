@@ -1,6 +1,43 @@
-*.class
+#################################################
+# .gitignore file used to maintain a clean repo #
+#################################################
 
-# Package Files #
-*.jar
-*.war
-*.ear
+###################
+# Eclipse files
+###################
+.classpath
+.project
+.settings/
+
+###################
+# Gedit files
+###################
+*.*~
+
+###################
+# Maven files
+###################
+target/
+
+###################
+# Vim files
+###################
+*.swp
+*.swo
+*.swn
+.vim
+
+###################
+# Production files
+###################
+*.prod.xml
+*.prod.sh
+*.preprod.sh
+*.prod.properties
+conf/config.properties
+logs/
+
+###################
+# Others
+###################
+${cache.path}/

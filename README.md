@@ -1,4 +1,6 @@
 esco-indicators-logs-processor
 ==============================
 
-batch to generate database from uportal and ExternalStats servlet logs
+Batch to generate database from uportal and ExternalStats servlet logs.
+Package as a tar.gz archive by maven.
+Can be run by configuring and executing batch_stats.sh
