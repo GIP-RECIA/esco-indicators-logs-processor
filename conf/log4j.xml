@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="false"
+	xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<appender name="console" class="org.apache.log4j.ConsoleAppender">
+		<param name="encoding" value="UTF-8" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%-7r [%-11.11t] %-5p %-30.30c{1} %m%n" />
+		</layout>
+	</appender>
+	
+	<appender name="STDERR" class="org.apache.log4j.ConsoleAppender">
+		<param name="encoding" value="UTF-8" />
+		<param name="Target" value="System.err" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%-7r [%-11.11t] %-5p %-30.30c{1} %m%n" />
+		</layout>
+		<filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="LevelMin" value="WARN"/>
+        </filter>
+	</appender>	
+
+	<appender name="fichier" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/indicators-backend.log" />
+		<param name="encoding" value="UTF-8" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d [%-11.11t] %-5p %-30.30c{1} %m%n" />
+		</layout>
+	</appender>
+
+	<!-- Loggers -->
+
+	<!-- 
+	<logger name="org.esco.indicators.backend.jdbc.JDBC" additivity="true"> 
+		<level value="DEBUG" /> 
+			<appender-ref ref="fichier" /> 
+			<appender-ref ref="console" /> 
+	</logger> 
+	-->
+	<!-- 
+	<logger name="org.esco.indicators.backend.utils.LdapUtils"
+		additivity="true">
+		<level value="DEBUG" />
+		<appender-ref ref="fichier" />
+		<appender-ref ref="console" />
+	</logger>
+ 	-->
+ 
+ 	<!-- 
+	<logger name="org.esco.indicators.backend.service.TraitementLDAP"
+		additivity="true">
+		<level value="DEBUG" />
+		<appender-ref ref="fichier" />
+		<appender-ref ref="console" />
+	</logger>
+	 -->
+	<!-- 
+	<logger name="org.esco.indicators.backend.service.Lecture"
+		additivity="false">
+		<level value="DEBUG" />
+		<appender-ref ref="fichier" />
+		<appender-ref ref="console" />
+	</logger>
+ 	-->
+	<!-- 
+	<logger name="org.esco.indicators.backend.service.TraitementFinMoisSemaine"
+		additivity="true">
+		<level value="DEBUG" />
+		<appender-ref ref="fichier" />
+		<appender-ref ref="console" />
+	</logger>
+ 	-->
+ 
+	<root>
+		<level value="INFO" />
+		<appender-ref ref="fichier" />
+		<appender-ref ref="console" />
+		<appender-ref ref="STDERR" />
+	</root>
+</log4j:configuration>

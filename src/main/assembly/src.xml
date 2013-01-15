@@ -1,0 +1,47 @@
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+
+	<id>tgz-with-dependencies</id>
+
+	<formats>
+		<format>tar.gz</format>
+	</formats>
+
+	<files>
+		<file>
+			<source>target/${project.build.finalName}.jar</source>
+			<destName>${project.artifactId}.jar</destName>
+		</file>
+		<file>
+			<source>script_creation_db.sql</source>
+			<destName>script_creation_db.sql</destName>
+		</file>
+		<file>
+			<source>usefull_queries.sql</source>
+			<destName>usefull_queries.sql</destName>
+		</file>		
+		<file>
+			<source>batch_stats.sh</source>
+			<destName>batch_stats.sh</destName>
+			<fileMode>0744</fileMode>
+		</file>		
+	</files>
+	
+	<fileSets>
+		<fileSet>
+			<directory>target/dependency/</directory>
+			<outputDirectory>lib/</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>conf/</directory>
+			<outputDirectory>conf/</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>logs/</directory>
+			<outputDirectory>logs/</outputDirectory>
+		</fileSet>
+	</fileSets>
+
+</assembly>  

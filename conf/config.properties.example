@@ -1,0 +1,34 @@
+
+#Données de la BD
+nombase=postgres
+port=5432
+user=XXXXXXXXXXX
+password=XXXXXXXXXXXXX
+
+
+#Connecteur LDAP
+ldap.url=XXXXXXXXXXXXXXXXXXXX
+ldap.user=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ldap.password=XXXXXXXXXXXXXXXX
+
+ldap.baseDn=dc=esco-centre,dc=fr
+ldap.brancheStructure=structures
+ldap.branchePersonne=people
+
+
+#Type d'établissement a prendre en compte par semaine (attention pas d'espace après les virgules)
+semaine=CFA,LEGTA
+#Durée par défaut d'une connexion sans fin (temps en minutes)
+dureeDefaut=30
+
+#Format des logs (jour ou mois)
+# jour : de minuit à minuit pour le jour à lire + un bout du jour apres pour recuperer les fins de sessions
+# mois : du 1er 00h au dernier OOh + un bout du premier jour du mois d'après pour recuperer les fins de sessions
+date=mois
+
+#Mode du traitement mensuel et hebdomadaire
+#Automatique pour verifier si on doit faire le traitement tous les jours et si on est le 1er d'un mois et un lundi, on verifie si il y a un trou dans les données et on stoppe si c'est le cas, sinon on fait le traitement
+#Mois pour lancer manuellement le traitement pour un mois ( le mois doit être placé en argument, etre de la forme YYYY-MM-DD et ne pas avoir été déjà traité ) 
+#Semaine pour lancer manuellement le traitement pour une semaine ( le premier jour de la semaine doit être placé en argument, etre de la forme YYYY-MM-DD et la semaine ne doit  pas avoir été déjà traitée ) 
+mode=Automatique
+
