@@ -369,7 +369,7 @@ public class Lecture {
 						sb.append("] ligne(s) lue(s)");
 					}
 					Lecture.LOGGER.info(String.format(
-							"[%s] lignes comptabilisés avec Fname inconnus: %s",
+							"[%s] lignes lue(s) et comptabilisés avec Fname inconnus dans services.conf: %s",
 							total, sb.toString()));
 				}
 			}
@@ -782,11 +782,6 @@ public class Lecture {
 				truncated_fname = fullFname.substring(0, index_underscore);
 			} else {
 				truncated_fname = fullFname;
-			}
-
-			if (truncated_fname.equals("CImap")) {
-				// CImap erreur normale : on ignore mais on log pas l'erreur
-				throw new LogLineToIgnore("Ignoring CImap fname !");
 			}
 
 			String service = DatasConfiguration.findServiceName(truncated_fname);
