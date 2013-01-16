@@ -720,7 +720,6 @@ public class Lecture {
 		final String[] datas = ligne.split(this.config.getLogValue(Config.LOG_ROW_SPACING));
 
 		final String fullFname;
-		final String truncated_fname;
 
 		try {
 			final String logLineDate = datas[this.config.getLogRow(Config.LOG_ROW_TIME)];
@@ -809,12 +808,16 @@ public class Lecture {
 
 			String service = DatasConfiguration.findServiceName(truncated_fname);
 			if (service == null) {
-				service = truncated_fname;
+				// If service not configured in services.conf
+				// The service is stored with default config :
+				// The full fname is used for truncated fname and for service name.
 				logLine.setUnknownService(true);
+				logLine.setTruncatedFname(fullFname);
+				logLine.setService(fullFname);
+			} else {
+				logLine.setTruncatedFname(truncated_fname);
+				logLine.setService(service);
 			}
-
-			logLine.setTruncatedFname(truncated_fname);
-			logLine.setService(service);
 		}
 	}
 
