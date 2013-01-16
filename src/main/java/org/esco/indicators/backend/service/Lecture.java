@@ -155,7 +155,7 @@ public class Lecture {
 
 			traitementOk = this.jdbc.commitTransaction(connection);
 		} catch (Exception e) {
-			Lecture.LOGGER.error("An error occured ! LDAP traitement will be rolled back !", e);
+			Lecture.LOGGER.error("An error occured ! Lecture traitement will be rolled back !", e);
 		} finally {
 			this.clear();
 		}
