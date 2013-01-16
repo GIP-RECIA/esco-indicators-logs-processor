@@ -167,8 +167,12 @@ public class TraitementLDAP {
 				// Write in file the new last LDAP processing time
 				this.writeLastLdapProcessingTimeInDb(cal);
 			}
+		} catch (final SQLException e) {
+			TraitementLDAP.LOGGER.error(String.format(
+					"An SQL error occured with code [%1$d] ! LDAP requesting process will be rolled back !", e.getErrorCode()), e);
+			JDBC.rollOutSqlException(e);
 		} catch (Exception e) {
-			TraitementLDAP.LOGGER.error("An error occured ! LDAP Etablishments process will be rolled back !", e);
+			TraitementLDAP.LOGGER.error("An error occured ! LDAP requesting process will be rolled back !", e);
 		}
 
 		chrono.stop();

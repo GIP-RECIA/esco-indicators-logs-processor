@@ -154,7 +154,11 @@ public class Lecture {
 			}
 
 			traitementOk = this.jdbc.commitTransaction(connection);
-		} catch (Exception e) {
+		} catch (final SQLException e) {
+			Lecture.LOGGER.error(String.format(
+					"An SQL error occured with code [%1$d] ! Lecture traitement will be rolled back !", e.getErrorCode()), e);
+			JDBC.rollOutSqlException(e);
+		} catch (final Exception e) {
 			Lecture.LOGGER.error("An error occured ! Lecture traitement will be rolled back !", e);
 		} finally {
 			this.clear();

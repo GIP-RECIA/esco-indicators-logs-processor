@@ -272,6 +272,10 @@ public class TraitementFinMoisSemaine {
 
 				monthOk = this.jdbc.commitTransaction(connection);
 			}
+		} catch (final SQLException e) {
+			TraitementFinMoisSemaine.LOGGER.error(String.format(
+					"An SQL error occured with code [%1$d] ! Month Compression processing will be rolled back !", e.getErrorCode()), e);
+			JDBC.rollOutSqlException(e);
 		} catch (Exception e) {
 			TraitementFinMoisSemaine.LOGGER.error("An error occured ! Month Compression processing will be rolled back !", e);
 		}
@@ -332,6 +336,10 @@ public class TraitementFinMoisSemaine {
 
 				weekOk = this.jdbc.commitTransaction(connection);
 			}
+		} catch (final SQLException e) {
+			TraitementFinMoisSemaine.LOGGER.error(String.format(
+					"An SQL error occured with code [%1$d] ! Week Compression processing will be rolled back !", e.getErrorCode()), e);
+			JDBC.rollOutSqlException(e);
 		} catch (Exception e) {
 			TraitementFinMoisSemaine.LOGGER.error("An error occured ! Week Compression processing will be rolled back !", e);
 		}
