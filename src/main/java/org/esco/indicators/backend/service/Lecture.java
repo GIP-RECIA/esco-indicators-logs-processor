@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import nl.bitwalker.useragentutils.Browser;
 import nl.bitwalker.useragentutils.OperatingSystem;
@@ -105,7 +106,7 @@ public class Lecture {
 	private final float defaultSessionTime;
 
 	/** Count of line ignored because of unknow fname. */
-	private Map<String, Long> unknowFnameLine = new HashMap<String, Long>(64);
+	private Map<String, Long> unknowFnameLine = new TreeMap<String, Long>();
 
 	private Map<Browser, Long> userAgentsBrowser = new HashMap<Browser, Long>(256);
 
