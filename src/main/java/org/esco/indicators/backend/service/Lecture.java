@@ -340,6 +340,16 @@ public class Lecture {
 								"Unsupported mode: [%s] !", processMode));
 					}
 
+					if (logLine.isUnknownService()) {
+						// Count number of unkown processed services
+						final String service = logLine.getService();
+						Long count = this.unknowFnameLine.get(service);
+						if (count == null) {
+							count = 0L;
+						}
+						this.unknowFnameLine.put(service, count + 1);
+					}
+
 					// Log line sucessfuly processed
 					nblignetraite++;
 				} catch (LogLineToIgnore e) {
@@ -369,7 +379,7 @@ public class Lecture {
 						sb.append("] ligne(s) lue(s)");
 					}
 					Lecture.LOGGER.info(String.format(
-							"[%s] lignes lue(s) et comptabilisés avec Fname inconnus dans services.conf: %s",
+							"[%s] lignes comptabilisés avec Fname inconnus dans services.conf: %s",
 							total, sb.toString()));
 				}
 			}
@@ -776,6 +786,19 @@ public class Lecture {
 			throw new LogLineToIgnore("User profil (objectClass) unknown from configuration !");
 		}
 
+		this.fillLogLineService(logLine, fullFname);
+
+		return logLine;
+	}
+
+	/**
+	 * Fill the LogLine with the corresponding service.
+	 * 
+	 * @param logLine the line of log object
+	 * @param fullFname the fname in the log
+	 */
+	protected void fillLogLineService(final LogLine logLine, final String fullFname) {
+		final String truncated_fname;
 		if (fullFname != null) {
 			int index_underscore = fullFname.indexOf("_");
 			if (index_underscore != -1) {
@@ -785,21 +808,14 @@ public class Lecture {
 			}
 
 			String service = DatasConfiguration.findServiceName(truncated_fname);
-
 			if (service == null) {
-				Long count = this.unknowFnameLine.get(fullFname);
-				if (count == null) {
-					count = 0L;
-				}
-				this.unknowFnameLine.put(fullFname, count + 1);
 				service = truncated_fname;
+				logLine.setUnknownService(true);
 			}
 
 			logLine.setTruncatedFname(truncated_fname);
 			logLine.setService(service);
 		}
-
-		return logLine;
 	}
 
 	/**

@@ -174,7 +174,6 @@ public final class DatasConfiguration {
 					DatasConfiguration.services.put(codeService, column2);
 				}
 
-
 				DatasConfiguration.logger.debug(String.format("Regroupement de services Map: [%1$s].",
 						DatasConfiguration.correspondanceService.toString()));
 				DatasConfiguration.logger.debug(String.format("Services Map: [%1$s].",

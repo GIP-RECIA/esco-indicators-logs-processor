@@ -49,6 +49,9 @@ public class LogLine {
 	/** User-Agent. */
 	private UserAgent userAgent;
 
+	/** True if logline represent an unknown service from services.conf. */
+	private boolean unknownService = false;
+
 	public LogLine() {
 		this.nbacces = 0;
 		this.idSession = "";
@@ -157,6 +160,14 @@ public class LogLine {
 
 	public void setUserAgent(final UserAgent userAgent) {
 		this.userAgent = userAgent;
+	}
+
+	public boolean isUnknownService() {
+		return this.unknownService;
+	}
+
+	public void setUnknownService(final boolean unknownService) {
+		this.unknownService = unknownService;
 	}
 
 	@Override
