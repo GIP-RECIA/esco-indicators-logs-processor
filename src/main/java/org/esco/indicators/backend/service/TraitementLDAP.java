@@ -170,7 +170,7 @@ public class TraitementLDAP {
 		} catch (final SQLException e) {
 			TraitementLDAP.LOGGER.error(String.format(
 					"An SQL error occured with code [%1$d] ! LDAP requesting process will be rolled back !", e.getErrorCode()), e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(TraitementLDAP.LOGGER, e);
 		} catch (Exception e) {
 			TraitementLDAP.LOGGER.error("An error occured ! LDAP requesting process will be rolled back !", e);
 		}

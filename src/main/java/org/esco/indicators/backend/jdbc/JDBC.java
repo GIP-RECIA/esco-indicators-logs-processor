@@ -158,7 +158,7 @@ public class JDBC {
 			commitOk = true;
 		} catch (SQLException e) {
 			JDBC.LOGGER.error("An error occured while commiting in DB ! Processing will be rolled back !", e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(JDBC.LOGGER, e);
 
 			connection.rollback();
 		} finally {
@@ -1065,7 +1065,7 @@ public class JDBC {
 		} catch (SQLException e) {
 			// Unable to retrieve last processing day in BD.
 			JDBC.LOGGER.error("Unable to retrieve last log Lecture day in BD", e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(JDBC.LOGGER, e);
 		}
 
 		final Date dernierJourFait;
@@ -1122,7 +1122,7 @@ public class JDBC {
 				test = false;
 				// Unable to retrieve last processing day in BD.
 				JDBC.LOGGER.error("Unable to test if a log date was already processed !", e);
-				JDBC.rollOutSqlException(e);
+				JDBC.rollOutSqlException(JDBC.LOGGER, e);
 			}
 		}
 
@@ -1566,10 +1566,16 @@ public class JDBC {
 		return result;
 	}
 
-	public static void rollOutSqlException(final SQLException e) {
+	public static void rollOutSqlException(final Log logger, final SQLException e) {
+		Assert.notNull(logger, "Logger cannot be null !");
+		Assert.notNull(e, "SQLException cannot be null !");
+
+		logger.error(String.format(
+				"SQL vendor specific error code: [%1$d] ; SQL state: [%1$s]",
+				e.getErrorCode(), e.getSQLState()));
 		SQLException next = e;
 		while ((next = next.getNextException()) != null) {
-			JDBC.LOGGER.error("Next SQL Exception is : ", next);
+			logger.error("Next SQL Exception is : ", next);
 		}
 	}
 

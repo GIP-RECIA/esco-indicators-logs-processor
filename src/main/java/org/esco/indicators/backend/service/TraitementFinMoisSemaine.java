@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.time.DateUtils;
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.esco.indicators.backend.exception.TransactionException;
 import org.esco.indicators.backend.jdbc.JDBC;
 import org.esco.indicators.backend.jdbc.model.CompressionKey;
@@ -27,7 +28,7 @@ import org.springframework.util.Assert;
 
 public class TraitementFinMoisSemaine {
 
-	private static final Logger LOGGER = Logger.getLogger(TraitementFinMoisSemaine.class.getName());
+	private static final Log LOGGER = LogFactory.getLog(TraitementFinMoisSemaine.class.getName());
 
 	/** Date format for month of year. */
 	private static final SimpleDateFormat dayOfYearFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -275,7 +276,7 @@ public class TraitementFinMoisSemaine {
 		} catch (final SQLException e) {
 			TraitementFinMoisSemaine.LOGGER.error(String.format(
 					"An SQL error occured with code [%1$d] ! Month Compression processing will be rolled back !", e.getErrorCode()), e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(TraitementFinMoisSemaine.LOGGER, e);
 		} catch (Exception e) {
 			TraitementFinMoisSemaine.LOGGER.error("An error occured ! Month Compression processing will be rolled back !", e);
 		}
@@ -339,7 +340,7 @@ public class TraitementFinMoisSemaine {
 		} catch (final SQLException e) {
 			TraitementFinMoisSemaine.LOGGER.error(String.format(
 					"An SQL error occured with code [%1$d] ! Week Compression processing will be rolled back !", e.getErrorCode()), e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(TraitementFinMoisSemaine.LOGGER, e);
 		} catch (Exception e) {
 			TraitementFinMoisSemaine.LOGGER.error("An error occured ! Week Compression processing will be rolled back !", e);
 		}

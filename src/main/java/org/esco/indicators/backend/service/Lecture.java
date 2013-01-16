@@ -157,7 +157,7 @@ public class Lecture {
 		} catch (final SQLException e) {
 			Lecture.LOGGER.error(String.format(
 					"An SQL error occured with code [%1$d] ! Lecture traitement will be rolled back !", e.getErrorCode()), e);
-			JDBC.rollOutSqlException(e);
+			JDBC.rollOutSqlException(Lecture.LOGGER, e);
 		} catch (final Exception e) {
 			Lecture.LOGGER.error("An error occured ! Lecture traitement will be rolled back !", e);
 		} finally {
@@ -375,12 +375,13 @@ public class Lecture {
 				if (this.unknowFnameLine.size() > 0) {
 					long total = 0;
 					StringBuffer sb = new StringBuffer(1024);
-					for (Entry<String, Long> entry : this.unknowFnameLine.entrySet()) {
-						total = total + entry.getValue();
+					for (String key : this.unknowFnameLine.keySet()) {
+						final Long value = this.unknowFnameLine.get(key);
+						total = total + value;
 						sb.append("\nFname: [");
-						sb.append(entry.getKey());
+						sb.append(key);
 						sb.append("] => [");
-						sb.append(entry.getValue());
+						sb.append(value);
 						sb.append("] ligne(s) lue(s)");
 					}
 					Lecture.LOGGER.info(String.format(
