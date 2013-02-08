@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.esco.stats</groupId>
 	<artifactId>indicators-backend</artifactId>
-	<version>0.0.11-SNAPSHOT</version>
+	<version>0.0.12-SNAPSHOT</version>
 
 	<dependencies>
 
@@ -58,7 +58,7 @@
 		<dependency>
 			<groupId>nl.bitwalker</groupId>
 			<artifactId>UserAgentUtils</artifactId>
-			<version>1.2.4</version>
+			<version>1.6</version>
 		</dependency>
 
 		<dependency>
@@ -81,7 +81,7 @@
 			<version>1.9.5</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
@@ -211,4 +211,11 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+
+	<repositories>
+		<repository>
+			<id>esco</id>
+			<url>http://www.esco-portail.org/nexus/content/groups/public/</url>
+		</repository>
+	</repositories>
 </project>
