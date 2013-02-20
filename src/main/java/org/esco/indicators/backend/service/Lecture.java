@@ -3,6 +3,7 @@ package org.esco.indicators.backend.service;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
@@ -25,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
+import nl.bitwalker.useragentutils.Browser;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
@@ -48,6 +50,7 @@ import org.esco.indicators.backend.model.DonneesConnexionPersonne;
 import org.esco.indicators.backend.model.DonneesEtab;
 import org.esco.indicators.backend.model.LogLine;
 import org.esco.indicators.backend.model.LogLineTypeEnum;
+import org.esco.indicators.backend.model.MajorVersionBrowserStats;
 import org.esco.indicators.backend.model.ProcessingModeEnum;
 import org.esco.indicators.backend.model.Service;
 import org.esco.indicators.backend.model.Sstart;
@@ -109,7 +112,7 @@ public class Lecture {
 	/** Count of line ignored because of unknow fname. */
 	private Map<String, Long> unknowFnameLine = new TreeMap<String, Long>();
 
-	private Map<String, Long> userAgentsBrowser = new HashMap<String, Long>(256);
+	private Map<String, MajorVersionBrowserStats> userAgentsBrowser = new HashMap<String, MajorVersionBrowserStats>(256);
 
 	private Map<String, Long> userAgentsOs = new HashMap<String, Long>(256);
 
@@ -179,28 +182,42 @@ public class Lecture {
 	protected void logUserAgentStats() {
 		if (Lecture.LOGGER.isInfoEnabled()) {
 			// Browsers
-			final Map<Long, String> browserIdentityMap = new IdentityHashMap<Long, String>(this.userAgentsBrowser.size());
-			for (Entry<String, Long> entry : this.userAgentsBrowser.entrySet()) {
-				browserIdentityMap.put(new Long(entry.getValue()), entry.getKey());
+			final Map<MajorVersionBrowserStats, String> browserIdentityMap =
+					new IdentityHashMap<MajorVersionBrowserStats, String>(this.userAgentsBrowser.size());
+			for (Entry<String, MajorVersionBrowserStats> entry : this.userAgentsBrowser.entrySet()) {
+				browserIdentityMap.put(entry.getValue(), entry.getKey());
 			}
 
-			final List<Long> browserIdentityList = new ArrayList<Long>(browserIdentityMap.size());
+			final List<MajorVersionBrowserStats> browserIdentityList = new ArrayList<MajorVersionBrowserStats>(browserIdentityMap.size());
 			browserIdentityList.addAll(browserIdentityMap.keySet());
 
 			Collections.sort(browserIdentityList, Collections.reverseOrder());
 
 			StringBuilder sb = new StringBuilder(browserIdentityList.size() * 256);
-			for (Long identityKey : browserIdentityList) {
-				final String browserId = browserIdentityMap.get(identityKey);
+			for (MajorVersionBrowserStats browserStats : browserIdentityList) {
+				final Long usageCount = browserStats.getUsageCount();
+				final String browserId = browserStats.getId();
+				Collection<Version> versions = browserStats.getVersions();
 				sb.append("[ ");
-				sb.append(identityKey);
-				sb.append(" ] connexion(s) => browser [ ");
+				sb.append(usageCount);
+				sb.append(" ] login(s) => browser [ ");
 				sb.append(browserId);
-				sb.append(" ]\n");
+				sb.append(" ] versions (");
+				Iterator<Version> itVer = versions.iterator();
+				if (itVer.hasNext()) {
+					Version version = itVer.next();
+					sb.append(version.getVersion());
+					while (itVer.hasNext()) {
+						version = itVer.next();
+						sb.append(" ; ");
+						sb.append(version.getVersion());
+					}
+				}
+				sb.append(")\n");
 			}
 
 			Lecture.LOGGER.info(String.format(
-					"Differents navigateurs utilisés : \n%s", sb.toString()));
+					"Differents navigateurs utilisés depuis le début du mois : \n%s", sb.toString()));
 
 			// Operating Systems
 			final Map<Long, String> osIdentityMap = new IdentityHashMap<Long, String>(this.userAgentsOs.size());
@@ -218,13 +235,13 @@ public class Lecture {
 				final String osId = osIdentityMap.get(identityKey);
 				sb.append("[ ");
 				sb.append(identityKey);
-				sb.append(" ] connexion(s) => operating system [ ");
+				sb.append(" ] login(s) => operating system [ ");
 				sb.append(osId);
 				sb.append(" ]\n");
 			}
 
 			Lecture.LOGGER.info(String.format(
-					"Differents systèmes d'exploitation utilisés : \n%s", sb.toString()));
+					"Differents systèmes d'exploitation utilisés depuis le début du mois : \n%s", sb.toString()));
 		}
 	}
 
@@ -241,6 +258,7 @@ public class Lecture {
 		final File f = new File(statsFilePath);
 		if (!f.exists()) {
 			Lecture.LOGGER.fatal("Impossible de trouver le fichier de statistiques " + statsFilePath);
+			throw new FileNotFoundException();
 		}
 
 		Lecture.LOGGER.info(String.format(
@@ -904,23 +922,17 @@ public class Lecture {
 		final UserAgent userAgent = logLine.getUserAgent();
 		if (userAgent != null) {
 			// Calculate brower id : browserName( - browserVersion)
-			final String browserName = userAgent.getBrowser().getName();
-			final Version browserVersion = userAgent.getBrowserVersion();
-			final StringBuilder sb = new StringBuilder(64);
-			sb.append(browserName);
-			if (browserVersion != null) {
-				sb.append(" - ");
-				sb.append(browserVersion.getVersion());
-			}
-			final String browserId =  sb.toString();
+			final Browser browser = userAgent.getBrowser();
+			final Version version = userAgent.getBrowserVersion();
+			final String browserId =  MajorVersionBrowserStats.getId(browser, version);
 
-			Long browserCount = this.userAgentsBrowser.get(browserId);
-			if (browserCount == null) {
-				browserCount = 1L;
-			} else {
-				browserCount ++;
+			MajorVersionBrowserStats browserStats = this.userAgentsBrowser.get(browserId);
+			if (browserStats == null) {
+				browserStats = new MajorVersionBrowserStats(userAgent);
 			}
-			this.userAgentsBrowser.put(browserId, browserCount);
+			browserStats.addVersionUsage(version);
+
+			this.userAgentsBrowser.put(browserId, browserStats);
 
 			// Calculate OS id : osName( - deviceType)
 			final OperatingSystem os = userAgent.getOperatingSystem();

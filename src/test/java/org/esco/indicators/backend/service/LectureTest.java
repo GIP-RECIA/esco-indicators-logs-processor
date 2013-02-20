@@ -56,9 +56,10 @@ public class LectureTest {
 	public void initLecture() throws ClassNotFoundException, SQLException {
 		final JDBC jdbc = new JDBC(this.dataSource);
 		this.lecture = new Lecture(jdbc);
+
+		this.clearMaps();
 	}
 
-	@Before
 	public void clearMaps() {
 		this.lecture.getDonneesConnexionEtabPersonne().clear();
 		this.lecture.getDebutConnexion().clear();
@@ -99,17 +100,18 @@ public class LectureTest {
 		attendue.setUid("F11007ti");
 		attendue.setUiduPortal("18474");
 		attendue.setIdSession("7");
+		attendue.setTruncatedFname("Pronote");
 
 		Assert.assertEquals("Wrong interpretation of CCALL_EXT line !", attendue, obtenue);
 	}
 
 	/**
 	 *  Test de remplissage d'une ligne de service.
-	 *  Cas d'erreur : objectclass non valide ou service non valide.
+	 *  Cas d'erreur : objectclass non valide.
 	 */
 	@Test(expected=LogLineToIgnore.class)
 	public void testFillCtargCcall_ExtCasErreur() throws Exception {
-		String ligne = "2012-06-14 07:38:30,876	netocentre3	CTARG	ENTEleve	4179	F0900ixy	ServiceTest	1	2	0180008L	3";
+		String ligne = "2012-06-14 07:38:30,876	netocentre3	CTARG	ENTEleve42	4179	F0900ixy	ServiceTest	1	2	0180008L	3";
 
 		this.lecture.fillCtargCcall_Ext(ligne, 3);
 	}
@@ -422,15 +424,27 @@ public class LectureTest {
 		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
-		this.lecture.traitementLog(statsFilePath, processMode, true);
+		this.lecture.informations(statsFilePath, processMode, true);
+	}
+
+	@Test
+	public void fileNotFoundTest2() throws Exception {
+		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
+		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
+
+		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
+
+		Assert.assertFalse("Traitement not KO !", ok);
 	}
 
 	@Test
 	public void dailyProcessingDryRunTest() throws Exception {
-		String statsFilePath = "src/test/resources/logsalire/2012/09/2012-09-24.log";
+		String statsFilePath = "src/test/resources/logsalire/2013/02/2013-02-10.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
-		this.lecture.traitementLog(statsFilePath, processMode, true);
+		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
+
+		Assert.assertTrue("Traitement KO !", ok);
 	}
 
 	@Test(timeout=1)
