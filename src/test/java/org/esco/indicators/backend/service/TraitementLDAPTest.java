@@ -14,7 +14,6 @@ import org.esco.indicators.backend.jdbc.model.ACommeProfil;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class TraitementLDAPTest {
 
 	private TraitementLDAP traitement;

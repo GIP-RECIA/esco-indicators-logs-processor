@@ -47,6 +47,7 @@ import org.esco.indicators.backend.utils.DateHelper;
 import org.postgresql.ds.PGPoolingDataSource;
 import org.postgresql.ds.jdbc23.AbstractJdbc23PoolingDataSource;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 
 
@@ -463,7 +464,9 @@ public class JDBC {
 
 			// Batch insert
 			int[] rowsCount = this.run.batch(connection, query, batchValues);
-			count = count + rowsCount.length;
+			for (int insertCount : rowsCount) {
+				count = count + insertCount;
+			}
 		}
 
 		JDBC.LOGGER.info(String.format("%1$d %2$s rows were inserted", count, tableName));
@@ -753,6 +756,7 @@ public class JDBC {
 
 			final int[] updatedRows = this.run.batch(connection, disactivateQuery, batchValues);
 
+			// All the rows we could not update must be inserted
 			Object[][] valuesToInsert = new Object[JDBC.JDBC_BATCH_ROW_COUNT][2];
 			int i = 0;
 			for (k = 0; k < updatedRows.length; k++) {
@@ -869,7 +873,10 @@ public class JDBC {
 
 			// Batch insert
 			int[] rowsCount = this.run.batch(connection, query, batchValues);
-			count = count + rowsCount.length;
+			for (int rowsInserted : rowsCount) {
+				count += rowsInserted;
+			}
+
 		}
 
 		JDBC.LOGGER.debug(String.format("%1$d ACommeProfil rows were inserted", count));
@@ -878,8 +885,8 @@ public class JDBC {
 	}
 
 	/**
-	 * Insert plusieurs profils.
-	 * => Date de fin vide et depart aujourd'hui
+	 * Désactive plusieurs profils.
+	 * => Date de fin aujourd'hui
 	 * 
 	 * @param acp
 	 * @return
@@ -935,7 +942,9 @@ public class JDBC {
 
 			// Batch insert
 			int[] rowsCount = this.run.batch(connection, query, batchValues);
-			count = count + rowsCount.length;
+			for (int rowsInserted : rowsCount) {
+				count += rowsInserted;
+			}
 		}
 
 		JDBC.LOGGER.debug(String.format("%1$d ACommeProfil rows were updated", count));
@@ -973,12 +982,12 @@ public class JDBC {
 	 * @return Set of ACommeProfil objects (can be null)
 	 * @throws SQLException
 	 */
-	public Map<String, Set<ACommeProfil>> getAllProfils(final Connection connection) throws SQLException {
+	public Map<String, Set<ACommeProfil>> getAllProfils() throws SQLException {
 		Map<String, Set<ACommeProfil>> result = null;
 
 		final String query = "select uid, uai, nomprofil, datedebutprofil, datefinprofil from acommeprofil " +
 				"where datefinprofil is null";
-		result = this.run.query(connection, query, new ACommeProfilInEtabRSHandler());
+		result = this.run.query(this.getConnection(), query, new ACommeProfilInEtabRSHandler());
 
 		return result;
 	}
@@ -1182,7 +1191,9 @@ public class JDBC {
 
 			// Batch insert
 			int[] rowsCount = this.run.batch(connection, query, batchValues);
-			count = count + rowsCount.length;
+			for (int rowsInserted : rowsCount) {
+				count += rowsInserted;
+			}
 		}
 
 		JDBC.LOGGER.info(String.format("%1$d NombreDeVisiteurs rows were inserted", count));
@@ -1244,7 +1255,9 @@ public class JDBC {
 
 			// Batch insert
 			int[] rowsCount = this.run.batch(connection, query, batchValues);
-			count = count + rowsCount.length;
+			for (int rowsInserted : rowsCount) {
+				count += rowsInserted;
+			}
 		}
 
 		JDBC.LOGGER.info(String.format("%1$d connexionServiceJour rows were inserted", count));
@@ -1288,6 +1301,120 @@ public class JDBC {
 		}
 
 		return etab;
+	}
+
+	/**
+	 * Synchronize la BD avec LDAP pour désactiver les utilisateurs qui ne sont plus dans LDAP.
+	 * 
+	 * @param ldapUids la totalité des uids trouvés dans LDAP
+	 * @param deactivateDate
+	 * @return le nombre de compte désactivé dans la BD
+	 * @throws SQLException
+	 */
+	public int synchronizeDeletedLdapUser(final Collection<String> ldapUids, final Date deactivateDate)
+			throws SQLException {
+		Assert.notNull(deactivateDate, "Update account activation date must be specified !");
+
+		JDBC.LOGGER.info("Synchronization between LDAP and DB for LDAP deleted accounts...");
+
+		final String formatedDeactivateDate = JDBC.dayOfYearFormat.format(deactivateDate);
+
+		int deactivateAcountsCount = 0;
+		if (!CollectionUtils.isEmpty(ldapUids)) {
+			final Connection connection = this.getConnection();
+			final String tempTableName = this.buildLdapUidsTempTable(connection, ldapUids);
+
+			// Deactivate all user deleted from LDAP.
+			final String queryAccount = "update est_activee ea " +
+					"set datefinactivation = to_date(?, 'YYYY-MM-DD') " +
+					"where ea.datefinactivation is null and ea.uid not in " +
+					"(select t.uid from " + tempTableName + " t where t.uid = ea.uid);";
+
+			deactivateAcountsCount = this.run.update(connection, queryAccount, formatedDeactivateDate);
+			JDBC.LOGGER.debug(String.format("Deactivated Accounts count: [%1$d]", deactivateAcountsCount));
+
+			int deactivateProfilsCount = 0;
+
+			// Deactivate all user deleted from LDAP.
+			final String queryProfil = "update acommeprofil acp " +
+					"set datefinprofil = to_date(?, 'YYYY-MM-DD') " +
+					"where acp.datefinprofil is null and acp.uid not in " +
+					"(select t.uid from " + tempTableName + " t where t.uid = acp.uid);";
+
+			deactivateProfilsCount = this.run.update(connection, queryProfil, formatedDeactivateDate);
+			JDBC.LOGGER.debug(String.format("Deactivated Profils count: [%1$d]", deactivateProfilsCount));
+
+			JDBC.LOGGER.info(String.format(
+					"LDAP Sync : deactivated Accounts count: [%1$d] ; deactivated Profils count: [%2$d] !",
+					deactivateAcountsCount, deactivateProfilsCount));
+		}
+
+		return deactivateAcountsCount;
+	}
+
+	/**
+	 * Build a temporary table of all LDAP uids found.
+	 * 
+	 * @param connection the connection to DB
+	 * @param ldapProfils all the profils found in LDAP
+	 * @return the name of the temporary table
+	 * @throws SQLException
+	 */
+	protected String buildLdapUidsTempTable(final Connection connection, final Collection<String> ldapUids)
+			throws SQLException {
+		final String tempTableName = "ldap_uids_temp";
+
+		// Build temp table
+		final String createQuery = "create temporary table " + tempTableName +
+				" (uid varchar(32) NOT NULL, PRIMARY KEY (uid)) on commit drop;";
+		this.run.update(connection, createQuery);
+
+		// Insert uids in temp table
+		int count = 0;
+		final String insertQuery = "insert into " + tempTableName +
+				" (uid) values (?)";
+
+		// Split the collection in smaller collections for batch insert.
+		Iterator<String> itUids = ldapUids.iterator();
+		while (itUids.hasNext()) {
+			Object[][] batchValues = new Object[JDBC.JDBC_BATCH_ROW_COUNT][1];
+
+			int k;
+
+			// Split
+			for (k = 0; (k < JDBC.JDBC_BATCH_ROW_COUNT) && itUids.hasNext(); k++) {
+				String uid = itUids.next();
+
+				batchValues[k][0] = uid;
+
+				if (JDBC.LOGGER.isTraceEnabled()) {
+					JDBC.LOGGER.trace(String.format("Preparing insertion for %1$s.", uid));
+				}
+			}
+
+			if (k < JDBC.JDBC_BATCH_ROW_COUNT) {
+				// The values array is not full. Resize it to correct size.
+				batchValues = (Object[][]) ArrayUtils.subarray(batchValues, 0, k);
+			}
+
+			if (JDBC.LOGGER.isTraceEnabled()) {
+				JDBC.LOGGER.trace(String.format("Insertion of %1$d uids rows in temp table...", k));
+			}
+
+			// Batch insert
+			int[] rowsCount = this.run.batch(connection, insertQuery, batchValues);
+			for (int rowsInserted : rowsCount) {
+				count += rowsInserted;
+			}
+		}
+
+		// Analyze temp table
+		final String analyzeQuery = "analyze " + tempTableName + ";";
+		this.run.update(connection, analyzeQuery);
+
+		JDBC.LOGGER.info(String.format("%1$d uids were inserted in temp table.", count));
+
+		return tempTableName;
 	}
 
 	/**
@@ -1416,12 +1543,12 @@ public class JDBC {
 			}
 
 			final int[] countMois = this.insertOrUpdateSeConnectePeriodeRows(monthValues, false, connection);
-			insertedAndUpdatedMoisCount[0] = insertedAndUpdatedMoisCount[0] + countMois[0];
-			insertedAndUpdatedMoisCount[1] = insertedAndUpdatedMoisCount[1] + countMois[1];
+			insertedAndUpdatedMoisCount[0] += countMois[0];
+			insertedAndUpdatedMoisCount[1] += countMois[1];
 
 			final int[] countSemaine = this.insertOrUpdateSeConnectePeriodeRows(weekValues, true, connection);
-			insertedAndUpdatedSemaineCount[0] = insertedAndUpdatedSemaineCount[0] + countSemaine[0];
-			insertedAndUpdatedSemaineCount[1] = insertedAndUpdatedSemaineCount[1] + countSemaine[1];
+			insertedAndUpdatedSemaineCount[0] += countSemaine[0];
+			insertedAndUpdatedSemaineCount[1] += countSemaine[1];
 		}
 
 		if (JDBC.LOGGER.isInfoEnabled()) {
@@ -1483,7 +1610,9 @@ public class JDBC {
 
 		Object[][] valuesToInsert = new Object[JDBC.JDBC_BATCH_ROW_COUNT][6];
 		int i = 0;
+		int updatedCount = 0;
 		for (int k = 0; k < updatedRows.length; k++) {
+			updatedCount += updatedRows[k];
 			if (updatedRows[k] == 0) {
 				// No rows updated, we need to insert it
 				valuesToInsert[i] = rowsValues[k];
@@ -1497,8 +1626,12 @@ public class JDBC {
 		}
 
 		final int[] insertedRows = this.run.batch(connection, insertRowQuery, valuesToInsert);
+		int insertedCount = 0;
+		for (int rowsInserted : insertedRows) {
+			insertedCount += rowsInserted;
+		}
 
-		final int[] insertedAndUpdated = new int[] {updatedRows.length - insertedRows.length, insertedRows.length};
+		final int[] insertedAndUpdated = new int[] {insertedCount, updatedCount};
 
 		if (JDBC.LOGGER.isTraceEnabled()) {
 			final String table;
@@ -1556,8 +1689,6 @@ public class JDBC {
 					JDBC.dayOfYearFormat.format(JDBC.JANUARY_FIRST_2000));
 			this.commitTransaction(connection2);
 		}
-
-
 
 		if (result == null) {
 			result = JDBC.JANUARY_FIRST_2000;

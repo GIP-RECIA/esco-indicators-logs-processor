@@ -51,6 +51,14 @@ public class LocalDbTest {
 		lecture.traitementLog(statsFilePath, processMode, false);
 	}
 
+	@Test//(timeout=0)
+	public void dailyLdapProcessingTest() throws Exception {
+		JDBC jdbc = new JDBC(this.dataSource);
+
+		final TraitementLDAP traitementLdap = new TraitementLDAP(jdbc);
+		traitementLdap.traitementLdap();
+	}
+
 	//@Test(timeout=0)
 	public void monthlyProcessingTest() throws Exception {
 		String statsFilePath = "src/test/resources/logsalire/2012/09/2012-09.log";

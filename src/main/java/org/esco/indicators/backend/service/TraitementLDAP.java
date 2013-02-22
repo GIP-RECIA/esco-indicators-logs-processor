@@ -101,21 +101,37 @@ public class TraitementLDAP {
 	private static final SimpleDateFormat ldapTimestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
 	/** If set to true the process cannot be launch multiple times the same day. */
-	private final boolean runOncePerDay = true;
+	private final boolean runOncePerDay = false;
 
 	/** Configuration. */
 	private final Config config = Config.getInstance();
 
 	private final JDBC jdbc;
 
-	/** All profils in BD loaded by UID. */
-	private Map<String, Set<ACommeProfil>> profilsByUid;
-
 	private String lastLdapProcessingTimestamp;
 
 	private int globalLoadedPeople = 0;
 
+	private int globalProcessedPeople = 0;
+
+	private int globalProcessedStudent = 0;
+
 	private int globalProcessedEtab = 0;
+
+	private long insertedProfilsCount = 0;
+
+	private long deletedProfilsCount = 0;
+
+	private long modifiedActivationCount = 0;
+
+	/** Parent with parental authority count. */
+	private long pWithApCount = 0;
+
+	/** Parent without parental authority count. */
+	private long pWithoutApCount = 0;
+
+	/** Collection of all uids found in LDAP. */
+	private final Collection<String> uidFoundInLdap = new HashSet<String>(100000);
 
 	/**
 	 * Constructor from Jdbc object.
@@ -128,7 +144,7 @@ public class TraitementLDAP {
 		this(new JDBC());
 	}
 
-	protected TraitementLDAP(final JDBC jdbc) throws ClassNotFoundException, SQLException {
+	protected TraitementLDAP(final JDBC jdbc) throws SQLException {
 		super();
 
 		Assert.notNull(jdbc, "JDBC Object not supplied !");
@@ -155,9 +171,6 @@ public class TraitementLDAP {
 
 				// Load establishment from LDAP
 				this.processEtablishments(connection);
-
-				// Load all profils from group of etabs
-				this.profilsByUid = this.jdbc.getAllProfils(connection);
 
 				this.jdbc.commitTransaction(connection);
 
@@ -292,6 +305,9 @@ public class TraitementLDAP {
 		final Calendar cal = Calendar.getInstance();
 		final Date today = cal.getTime();
 
+		//Load all profils from DB
+		final Map<String, Set<ACommeProfil>> profilsByUid = this.jdbc.getAllProfils();
+
 		// Liste de tous les établissement
 		final List<Etablissement> allEtabs = this.jdbc.getAllEtablissements();
 
@@ -326,9 +342,10 @@ public class TraitementLDAP {
 			Future<Object> future = groupEtabsTpe.submit(new Callable<Object>() {
 				@Override
 				public Object call() throws Exception {
-					int peopleCount = TraitementLDAP.this.processAccountsActivationForGroupEtabs(groupEtabs, today, ldapRequestTpe);
+					long[] peopleCount = TraitementLDAP.this.processAccountsActivationForGroupEtabs(
+							groupEtabs, today, ldapRequestTpe, profilsByUid);
 
-					TraitementLDAP.this.logLoadedPeopleCount(peopleCount, groupEtabs.size());
+					TraitementLDAP.this.logLoadedPeopleCount(peopleCount[0], peopleCount[1], groupEtabs.size());
 
 					return null;
 				}
@@ -351,6 +368,28 @@ public class TraitementLDAP {
 			ldapRequestTpe.shutdownNow();
 		}
 
+		TraitementLDAP.LOGGER.info("---------- LDAP parsing stats : ----------");
+		TraitementLDAP.LOGGER.info(String.format(
+				"[%1$d] people was parsed during the LDAP scan, resulting in [%2$d] people processed as follow :",
+				this.globalLoadedPeople, this.globalProcessedPeople));
+		TraitementLDAP.LOGGER.info(String.format("* [%1$d] students processed", this.globalProcessedStudent));
+		TraitementLDAP.LOGGER.info(String.format("* [%1$d] parents with parental authority processed", this.pWithApCount));
+		TraitementLDAP.LOGGER.info(String.format("* [%1$d] other people processed",
+				this.globalProcessedPeople - this.globalProcessedStudent - this.pWithApCount));
+		TraitementLDAP.LOGGER.info(String.format(
+				"Parents without parental authority found: [%1$d] whose where not processed.", this.pWithoutApCount));
+		TraitementLDAP.LOGGER.info("---------- LDAP parsing stats ----------");
+
+		TraitementLDAP.LOGGER.info(String.format(
+				"[%1$d] Activations modifiés (insert or update) dans la BD.", this.modifiedActivationCount));
+		TraitementLDAP.LOGGER.info(String.format(
+				"[%1$d] Profils insérés dans la BD.", this.insertedProfilsCount));
+		TraitementLDAP.LOGGER.info(String.format(
+				"[%1$d] Profils désactivés dans la BD.", this.deletedProfilsCount));
+
+		// Synchronize the BD for deleted user in LDAP.
+		this.jdbc.synchronizeDeletedLdapUser(this.uidFoundInLdap, today);
+
 		chrono.stop();
 		TraitementLDAP.LOGGER.info(String.format("Durée du chargement des comptes : %s .", chrono.getDureeHumain()));
 		TraitementLDAP.LOGGER.info("---------- Fin du chargement des comptes depuis LDAP ----------");
@@ -359,12 +398,15 @@ public class TraitementLDAP {
 	/**
 	 * Refresh global people loaded count and processed etab count.
 	 * 
-	 * @param peopleCount
+	 * @param peopleLoaded
 	 * @param etabCount
 	 */
-	protected synchronized void logLoadedPeopleCount(final int peopleCount, final int etabCount) {
-		this.globalLoadedPeople = this.globalLoadedPeople  + peopleCount;
-		this.globalProcessedEtab = this.globalProcessedEtab  + etabCount;
+	protected synchronized void logLoadedPeopleCount(final long peopleLoaded,
+			final long peopleProcessed, final long etabCount) {
+		this.globalLoadedPeople += peopleLoaded;
+		this.globalProcessedPeople += peopleProcessed;
+		this.globalProcessedEtab += etabCount;
+
 		TraitementLDAP.LOGGER.info(String.format(
 				"=====> [%1$d] Personnes dans [%2$d] Etablissements ont désormais été parsés dans le LDAP."
 				, this.globalLoadedPeople, this.globalProcessedEtab));
@@ -376,13 +418,15 @@ public class TraitementLDAP {
 	 * @param groupEtabs
 	 * @param today
 	 * @param ldapRequestTpe
-	 * @return the count of people loaded in the group of etabs.
+	 * @param profilsByUid all profils in BD grouped by uid
+	 * @return the counts of people loaded and processed in the group of etabs.
 	 * @throws SQLException
 	 * @throws NamingException
 	 * @throws TransactionException
 	 */
-	protected int processAccountsActivationForGroupEtabs(final Collection<Etablissement> groupEtabs,
-			final Date today, final ThreadPoolExecutor ldapRequestTpe) throws SQLException, NamingException, TransactionException {
+	protected long[] processAccountsActivationForGroupEtabs(final Collection<Etablissement> groupEtabs,
+			final Date today, final ThreadPoolExecutor ldapRequestTpe, final Map<String, Set<ACommeProfil>> profilsByUid)
+					throws SQLException, NamingException, TransactionException {
 		int k = 0;
 
 		// LDAP thread connection count.
@@ -393,7 +437,6 @@ public class TraitementLDAP {
 
 		final List<Attributes> listeElevesAttrs = new ArrayList<Attributes>(groupEtabs.size() * 3000);
 		final List<Attributes> listeNonElevesAttrs = new ArrayList<Attributes>(groupEtabs.size() * 3000);
-		//final Collection<Attributes> peopleToProcess = new ArrayList<Attributes>(groupEtabs.size() * 6000);
 
 		if (TraitementLDAP.LOGGER.isDebugEnabled()) {
 			TraitementLDAP.LOGGER.debug(String.format(
@@ -431,11 +474,10 @@ public class TraitementLDAP {
 			}
 		}
 
+		final long parsedPeopleCount = listeElevesAttrs.size() + listeNonElevesAttrs.size();
+
 		//on recupere la liste des responsables a prendre en compte + on fait les traitements pour les élèves de cet établissement
 		final Map<String, Attributes> pap = this.loadAutoriteParentaleMap(listeElevesAttrs);
-
-		final int parsedPeopleCount = listeElevesAttrs.size() + listeNonElevesAttrs.size();
-
 		// And process all AUTORITE_PARENTALE people (not all non eleves)
 		final Iterator<Attributes> itNonEleves = listeNonElevesAttrs.iterator();
 		while (itNonEleves.hasNext()) {
@@ -448,22 +490,28 @@ public class TraitementLDAP {
 			}
 		}
 
+		final long processedPeopleCount = listeElevesAttrs.size() + listeNonElevesAttrs.size();
+		synchronized (this) {
+			this.globalProcessedStudent += listeElevesAttrs.size();
+		}
+
 		if (TraitementLDAP.LOGGER.isDebugEnabled()) {
 			TraitementLDAP.LOGGER.debug(String.format(
-					"[%1$d] on [%2$d] Eleves and Non élèves are eligibles to process account activation and update profils."
-					, listeElevesAttrs.size() + listeNonElevesAttrs.size(), parsedPeopleCount));
+					"[%1$d] on [%2$d] People (Students, Parents, Teachers, Enterprises, ...) are eligibles to process account activation and update profils."
+					, processedPeopleCount, parsedPeopleCount));
 		}
 
 		final Connection connection = this.jdbc.getConnection();
 
 		this.traitementActivation(today, listeElevesAttrs, connection);
 		this.traitementActivation(today, listeNonElevesAttrs, connection);
-		this.traitementProfilsPersonne(today, listeElevesAttrs, connection);
-		this.traitementProfilsPersonne(today, listeNonElevesAttrs, connection);
+		this.traitementProfilsPersonne(today, listeElevesAttrs, connection, profilsByUid);
+		this.traitementProfilsPersonne(today, listeNonElevesAttrs, connection, profilsByUid);
+
 		this.jdbc.commitTransaction(connection);
 
 		// Read people count
-		return parsedPeopleCount;
+		return new long[]{parsedPeopleCount, processedPeopleCount};
 	}
 
 	/**
@@ -526,10 +574,6 @@ public class TraitementLDAP {
 		for (Etablissement etab : etabs) {
 			// MBD: remplacement de la recherche via Siren rattachement par UAI rattachement en utilisant ESCOUAI en premier car indéxé
 
-			//			sb.append("(ENTPersonStructRattach=ENTStructureSIREN=");
-			//			sb.append(etab.getSiren());
-			//			sb.append(",ou=structures,dc=esco-centre,dc=fr)");
-
 			sb.append("(|");
 
 			sb.append("(&");
@@ -557,9 +601,7 @@ public class TraitementLDAP {
 			sb.append(")");
 		}
 		sb.append(")");
-		//sb.append("(modifyTimestamp>=");
-		//sb.append(this.lastLdapProcessingTimestamp);
-		//sb.append(")");
+
 		sb.append(")");
 		final String  filter = sb.toString();
 
@@ -587,11 +629,6 @@ public class TraitementLDAP {
 		sb.append("(|");
 		for (Etablissement etab : etabs) {
 			// MBD: remplacement de la recherche via Siren rattachement par UAI rattachement en utilisant ESCOUAI en premier car indéxé
-
-			//			sb.append("(ENTPersonStructRattach=ENTStructureSIREN=");
-			//			sb.append(etab.getSiren());
-			//			sb.append(",ou=structures,dc=esco-centre,dc=fr)");
-
 			sb.append("(|");
 
 			sb.append("(&");
@@ -619,9 +656,7 @@ public class TraitementLDAP {
 			sb.append(")");
 		}
 		sb.append(")");
-		//sb.append("(modifyTimestamp>=");
-		//sb.append(this.lastLdapProcessingTimestamp);
-		//sb.append(")");
+
 		sb.append(")");
 		final String filter = sb.toString();
 
@@ -629,77 +664,6 @@ public class TraitementLDAP {
 		final LdapPagination listeNonElevesPagination = LdapUtils.buildLdapPagination(LdapUtils.PEOPLE_DN, filter);
 
 		return listeNonElevesPagination;
-	}
-
-	/**
-	 * Load all eleves of an etab from LDAP.
-	 * 
-	 * @param siren SIREN of the etab
-	 * @return the list of LDAP attributes for the eleves
-	 * @throws TransactionException
-	 */
-	protected List<Attributes> loadElevesFromEtabRecentlyModified(final String siren) {
-		final StringBuilder sb = new StringBuilder(256);
-		sb.append("(&");
-		sb.append("(uid=*)(objectClass=ENTEleve)");
-		sb.append("(modifyTimestamp>=");
-		sb.append(this.lastLdapProcessingTimestamp);
-		sb.append(")");
-		sb.append("(ENTPersonStructRattach=ENTStructureSIREN=");
-		sb.append(siren);
-		sb.append(",ou=structures,dc=esco-centre,dc=fr)");
-		sb.append(")");
-		final String  filter = sb.toString();
-
-		// On récupère la liste de tous les elèves rattachés à l'établissement, qui ont été modifiés entre le dernier traitement LDAP et aujourd'hui
-		final List<Attributes> listeElevesAttrs = LdapUtils.searchWithPagedPersonne(filter);
-
-		if (CollectionUtils.isEmpty(listeElevesAttrs)) {
-			TraitementLDAP.LOGGER.warn(
-					"On a récupéré aucun élève récemment modifé dans l'etablissement " + siren + " !");
-		} else {
-			if (TraitementLDAP.LOGGER.isInfoEnabled()) {
-				TraitementLDAP.LOGGER.info(listeElevesAttrs.size() + " éleves chargés.");
-			}
-		}
-
-		return listeElevesAttrs;
-	}
-
-	/**
-	 * Load all non eleves of an etab from LDAP.
-	 * 
-	 * @param siren SIREN of the etab
-	 * @return the list of LDAP attributes for the non eleves
-	 * @throws TransactionException
-	 */
-	protected List<Attributes> loadNonElevesFromEtabRecentlyModified(final String siren) {
-		StringBuilder sb = new StringBuilder(256);
-		sb .append("(&");
-		sb.append("(uid=*)(objectClass=*)(!(objectClass=ENTEleve))");
-		sb.append("(modifyTimestamp>=");
-		sb.append(this.lastLdapProcessingTimestamp);
-		sb.append(")");
-		sb.append("(ENTPersonStructRattach=ENTStructureSIREN=");
-		sb.append(siren);
-		sb.append(",ou=structures,dc=esco-centre,dc=fr)");
-		sb.append(")");
-		final String filter = sb.toString();
-
-		// On récupère la liste de toutes les personnes (sauf les elèves) rattachées à l'établissement,
-		// qui ont été modifiés entre le dernier traitement LDAP et aujourd'hui
-		final List<Attributes> listeNonElevesAttrs = LdapUtils.searchWithPagedPersonne(filter);
-
-		if (CollectionUtils.isEmpty(listeNonElevesAttrs)) {
-			TraitementLDAP.LOGGER.warn(
-					"On a récupéré aucun non élève récemment modifé dans l'etablissement " + siren + " !");
-		} else {
-			if (TraitementLDAP.LOGGER.isInfoEnabled()) {
-				TraitementLDAP.LOGGER.info(listeNonElevesAttrs.size() + " non éleves chargés.");
-			}
-		}
-
-		return listeNonElevesAttrs;
 	}
 
 	/**
@@ -742,11 +706,19 @@ public class TraitementLDAP {
 
 		if(this.isParent(attrs)) {
 			final Attribute peopleUid = attrs.get(TraitementLDAP.PEOPLE_UID_LDAP_FIELD);
-			if ((peopleUid == null) || !autoritesParental.containsKey(String.valueOf(peopleUid.get()))) {
+			if ((peopleUid == null) || (peopleUid.get() == null) ||
+					!autoritesParental.containsKey(String.valueOf(peopleUid.get()))) {
 				// Si c'est un parent
 				// Et si la personne n'est pas dans la liste des responsables legaux
 				//(La personne n'a pas l'autorite parentale) on l'ignore
 				result = true;
+				synchronized (this) {
+					this.pWithoutApCount ++;
+				}
+			} else {
+				synchronized (this) {
+					this.pWithApCount ++;
+				}
 			}
 		}
 
@@ -761,13 +733,15 @@ public class TraitementLDAP {
 	 * @param today
 	 * @param connection
 	 * @param peopleAttr LDAP Attributes representing a people
+	 * @param profilsByUid all profils in BD grouped by uid
 	 * @throws SQLException
 	 * @throws NamingException
 	 * @throws TransactionException
 	 */
 	@SuppressWarnings("unchecked")
 	protected void traitementProfilsPersonne(final Date today, final Collection<Attributes> peopleToProcess,
-			final Connection connection) throws SQLException, NamingException, TransactionException {
+			final Connection connection, final Map<String, Set<ACommeProfil>> profilsByUid)
+					throws SQLException, NamingException, TransactionException {
 
 		final Collection<ACommeProfil> profilsToInsert = new HashSet<ACommeProfil>(peopleToProcess.size());
 		final Collection<ACommeProfil> profilsToDelete = new HashSet<ACommeProfil>(peopleToProcess.size());
@@ -781,7 +755,7 @@ public class TraitementLDAP {
 			}
 
 			// Liste des profils de la personne dans la BD (already loaded in the map)
-			final Set<ACommeProfil> listeProfilBD = this.profilsByUid.get(peopleUid);
+			final Set<ACommeProfil> listeProfilBD = profilsByUid.get(peopleUid);
 			// Liste des profils de la personne dans le LDAP
 			final Set<ACommeProfil> listeProfilLdap = this.listeProfilLdap(peopleAttr);
 
@@ -793,9 +767,13 @@ public class TraitementLDAP {
 			}
 		}
 
-		this.jdbc.insertProfils(profilsToInsert, today, connection);
+		int insertedCount = this.jdbc.insertProfils(profilsToInsert, today, connection);
+		int deletedCount = this.jdbc.deleteProfils(profilsToDelete, today, connection);
 
-		this.jdbc.deleteProfils(profilsToDelete, today, connection);
+		synchronized(this) {
+			this.insertedProfilsCount += insertedCount;
+			this.deletedProfilsCount += deletedCount;
+		}
 	}
 
 	/**
@@ -893,49 +871,64 @@ public class TraitementLDAP {
 				uid = null;
 			}
 
-			// Is there a difference between LDAP and DB ?
-			if (uid != null) {
-				final EstActivee activationState = this.jdbc.getLastActivationState(uid, connection);
+			if ((uid == null) || "null".equals(uid)) {
+				TraitementLDAP.LOGGER.warn(String.format("No UID attached to the LDAP Attributes: [%1$s] !", peopleAttrs.toString()));
+				return;
+			}
 
-				String password = null;
-				final Attribute passwdAttr = peopleAttrs.get(TraitementLDAP.PEOPLE_PASSWORD_LDAP_FIELD);
-				if (passwdAttr != null) {
-					final byte[] passb = (byte[]) passwdAttr.get();
-					if (passb != null) {
-						password = new String(passb);
+			boolean added = false;
+			synchronized (this) {
+				added = this.uidFoundInLdap.add(uid);
+			}
+			if (!added) {
+				TraitementLDAP.LOGGER.warn(String.format("UID already processed : [%1$s] !", uid));
+			}
+
+			// Is there a difference between LDAP and DB ?
+			final EstActivee activationState = this.jdbc.getLastActivationState(uid, connection);
+
+			String password = null;
+			final Attribute passwdAttr = peopleAttrs.get(TraitementLDAP.PEOPLE_PASSWORD_LDAP_FIELD);
+			if (passwdAttr != null) {
+				final byte[] passb = (byte[]) passwdAttr.get();
+				if (passb != null) {
+					password = new String(passb);
+				}
+			}
+
+			if(this.isValidAccount(password)) {
+				// Si compte valide
+
+				if (activationState != null) {
+					final Date debut = activationState.getDateDebutActivation();
+					final Date fin = activationState.getDateFinActivation();
+
+					Assert.notNull(debut, "Date de début d'activation ne peut être null ici !");
+
+					if (DateUtils.isSameDay(debut, today)
+							|| ((fin != null) && DateUtils.isSameDay(fin, today))) {
+						// Si l'état d'activation à déjà changé dans la journée : ne pas le prendre en compte !
+						continue;
 					}
 				}
 
-				if(this.isValidAccount(password)) {
-					// Si compte valide
+				boolean activatedInLdap = this.isActivatedAccount(password);
 
-					if (activationState != null) {
-						final Date debut = activationState.getDateDebutActivation();
-						final Date fin = activationState.getDateFinActivation();
-
-						Assert.notNull(debut, "Date de début d'activation ne peut être null ici !");
-
-						if (DateUtils.isSameDay(debut, today)
-								|| ((fin != null) && DateUtils.isSameDay(fin, today))) {
-							// Si l'état d'activation à déjà changé dans la journée : ne pas le prendre en compte !
-							continue;
-						}
-					}
-
-					boolean activatedInLdap = this.isActivatedAccount(password);
-
-					if(((activationState == null) && (activatedInLdap))
-							|| ((activationState != null) && (activationState.isActive() != activatedInLdap))){
-						// Si activation inexistante en BD mais activation dans LDAP
-						// Ou si activation dans des etats differents entre BD et LDAP
-						uidWithActivationChange.add(uid);
-					}
+				if(((activationState == null) && (activatedInLdap))
+						|| ((activationState != null) && (activationState.isActive() != activatedInLdap))){
+					// Si activation inexistante en BD mais activation dans LDAP
+					// Ou si activation dans des etats differents entre BD et LDAP
+					uidWithActivationChange.add(uid);
 				}
 			}
 		}
 
 		// Update accounts activation
 		this.jdbc.updateAccountsActivation(uidWithActivationChange , today, connection);
+
+		synchronized(this) {
+			this.modifiedActivationCount +=  uidWithActivationChange.size();
+		}
 	}
 
 	/**

@@ -25,9 +25,10 @@
 		<property name="maxConnections" value="20" />
 	</bean>
 
+<!-- 	
 	<jdbc:initialize-database data-source="dataSource" enabled="true">
 		<jdbc:script location="classpath:localDb/createDataBase.sql" />
 		<jdbc:script location="classpath:localDb/initDataBase.sql" />
 	</jdbc:initialize-database>
-
+ -->
 </beans>
