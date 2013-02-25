@@ -1344,6 +1344,8 @@ public class JDBC {
 			deactivateProfilsCount = this.run.update(connection, queryProfil, formatedDeactivateDate);
 			JDBC.LOGGER.debug(String.format("Deactivated Profils count: [%1$d]", deactivateProfilsCount));
 
+			this.commitTransaction(connection);
+
 			JDBC.LOGGER.info(String.format(
 					"LDAP Sync : deactivated Accounts count: [%1$d] ; deactivated Profils count: [%2$d] !",
 					deactivateAcountsCount, deactivateProfilsCount));
