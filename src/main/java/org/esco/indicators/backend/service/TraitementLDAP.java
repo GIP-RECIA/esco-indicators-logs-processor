@@ -1,10 +1,3 @@
-/*
- * Projet ENT-CRLR - Conseil Regional Languedoc Roussillon.
- * Copyright (c) 2009 Bull SAS
- *
- * $Id: jalopy.xml,v 1.1 2009/03/17 16:30:44 ent_breyton Exp $
- */
-
 package org.esco.indicators.backend.service;
 
 import java.io.BufferedReader;
@@ -101,7 +94,7 @@ public class TraitementLDAP {
 	private static final SimpleDateFormat ldapTimestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
 	/** If set to true the process cannot be launch multiple times the same day. */
-	private final boolean runOncePerDay = false;
+	private final boolean runOncePerDay = true;
 
 	/** Configuration. */
 	private final Config config = Config.getInstance();
