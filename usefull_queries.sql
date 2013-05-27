@@ -8,9 +8,13 @@ delete from connexionservicejour where jour >= '2012-12-01';
 delete from nombredevisiteurs where jour >= '2012-12-01';
 
 ##### Find all services names #####
-select distinct(nomservice) from connexionservicejour;
-select distinct(truncatedfname) from connexionservicejour;
+select distinct(nomservice), truncatedfname from connexionservicejour order by nomservice;
+select distinct(truncatedfname), nomservice from connexionservicejour order by truncatedfname;
 
 ##### Update services names #####
 select count(*) from connexionservicejour where nomservice = 'Listes de diffusions Clg du 37';
 update connexionservicejour set nomservice = 'Listes de diffusions' where nomservice = 'Listes de diffusions Clg du 37';
+
+##### Strange checks #####
+# Lot of connexions to a service by only one people
+select uai, uid, nomprofil, nomservice, jour, nbconnexionservice from connexionservicejour where nbconnexionservice > 200;
