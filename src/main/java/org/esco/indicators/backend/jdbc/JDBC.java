@@ -136,7 +136,7 @@ public class JDBC {
 			poolDs.setMaxConnections((ldapThreadCount / 2) + 5);
 
 			poolDs.setLoginTimeout(10);
-			poolDs.setSocketTimeout(10);
+			poolDs.setSocketTimeout(30);
 
 			poolDs.initialize();
 		}
