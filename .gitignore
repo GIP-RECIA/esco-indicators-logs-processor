@@ -41,3 +41,6 @@ logs/
 # Others
 ###################
 ${cache.path}/
+
+# Log files
+src/test/resources/logsalire
