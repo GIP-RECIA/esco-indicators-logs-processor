@@ -92,7 +92,10 @@ public class Lecture {
 	private final SimpleDateFormat dayOfYearFormat = new SimpleDateFormat("yyyy-MM-dd");
 
 	/** Date format for day of year. */
-	private final SimpleDateFormat logTimeFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss,SSS");
+	private final SimpleDateFormat logTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
+	
+	/** Date parse patterns for day of year. */
+	private final String[] logTimeParsePatterns = new String[]{this.logTimeFormat.toPattern()};
 
 	/** First log date in log file. */
 	private Date firstLogDate;
@@ -312,8 +315,11 @@ public class Lecture {
 					}
 
 					final String[] logTime = datas[this.config.getLogRow(Config.LOG_ROW_TIME)].split(" ");
-
-					final Date logDay = this.dayOfYearFormat.parse(logTime[0]);
+					
+					final Date logDay;
+					synchronized(this) {
+						logDay = this.dayOfYearFormat.parse(logTime[0]);
+					}
 					if (this.firstLogDate == null) {
 						// Init first log date
 						this.firstLogDate = logDay;
@@ -524,6 +530,9 @@ public class Lecture {
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
 			break;
+			
+		default:
+			break;
 		}
 	}
 
@@ -553,6 +562,9 @@ public class Lecture {
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
 			break;
+			
+		default:
+			break;
 		}
 	}
 
@@ -578,6 +590,9 @@ public class Lecture {
 
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
+			break;
+			
+		default:
 			break;
 		}
 	}
@@ -608,6 +623,9 @@ public class Lecture {
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
 			break;
+			
+		default:
+			break;
 		}
 	}
 
@@ -633,6 +651,9 @@ public class Lecture {
 
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
+			break;
+			
+		default:
 			break;
 		}
 	}
@@ -753,7 +774,7 @@ public class Lecture {
 
 		try {
 			final String logLineDate = datas[this.config.getLogRow(Config.LOG_ROW_TIME)];
-			final Date logDate = DateUtils.parseDateStrictly(logLineDate, new String[]{this.logTimeFormat.toPattern()});
+			final Date logDate = DateUtils.parseDateStrictly(logLineDate, this.logTimeParsePatterns);
 			final String logTypeCode = datas[this.logTypeRowId].replaceAll("\\s", "");
 			final LogLineTypeEnum logType = LogLineTypeEnum.fromLogLineEventTypeRow(logTypeCode);
 			logLine.setEventType(logType);
@@ -866,7 +887,7 @@ public class Lecture {
 
 		try {
 			final String logLineDate = datas[this.config.getLogRow(Config.LOG_ROW_TIME)];
-			final Date logDate = DateUtils.parseDateStrictly(logLineDate, new String[]{this.logTimeFormat.toPattern()});
+			final Date logDate = DateUtils.parseDateStrictly(logLineDate, this.logTimeParsePatterns);
 			final String logType = datas[this.logTypeRowId].replaceAll("\\s", "");
 			logLine.setEventType(LogLineTypeEnum.fromLogLineEventTypeRow(logType));
 			logLine.setPortail(datas[this.config.getLogRow(Config.LOG_ROW_PORTAL_NAME)]);

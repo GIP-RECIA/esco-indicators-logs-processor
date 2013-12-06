@@ -24,6 +24,7 @@ import org.esco.indicators.backend.model.SstartValue;
 import org.esco.indicators.backend.model.TypeStatEnum;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +96,7 @@ public class LectureTest {
 		attendue.setNbacces(1);
 		attendue.setObjectClass("ENTEleve");
 		attendue.setPortail("netocentre3");
-		attendue.setService("Mes notes/Pronote");
+		attendue.setService("VieScolaire");
 		attendue.setUai("0450062Y");
 		attendue.setUid("F11007ti");
 		attendue.setUiduPortal("18474");
@@ -447,7 +448,8 @@ public class LectureTest {
 		Assert.assertTrue("Traitement KO !", ok);
 	}
 
-	@Test(timeout=1)
+	@Test
+	@Ignore
 	public void monthlyProcessingDryRunTest() throws Exception {
 		String statsFilePath = "src/test/resources/logsalire/2012/09/2012-09.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.MONTHLY;
