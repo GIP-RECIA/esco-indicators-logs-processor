@@ -524,9 +524,6 @@ public class Lecture {
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
 			break;
-			
-		default:
-			break;
 		}
 	}
 
