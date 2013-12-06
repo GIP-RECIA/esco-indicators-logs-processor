@@ -2,7 +2,7 @@ package org.esco.indicators.backend.model;
 
 import java.util.Date;
 
-import nl.bitwalker.useragentutils.UserAgent;
+import eu.bitwalker.useragentutils.UserAgent;
 
 /**
  * Representaion of a statistique log file line. A line is a record of an user

@@ -26,11 +26,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import nl.bitwalker.useragentutils.Browser;
-import nl.bitwalker.useragentutils.DeviceType;
-import nl.bitwalker.useragentutils.OperatingSystem;
-import nl.bitwalker.useragentutils.UserAgent;
-import nl.bitwalker.useragentutils.Version;
+import eu.bitwalker.useragentutils.Browser;
+import eu.bitwalker.useragentutils.DeviceType;
+import eu.bitwalker.useragentutils.OperatingSystem;
+import eu.bitwalker.useragentutils.UserAgent;
+import eu.bitwalker.useragentutils.Version;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -523,6 +523,9 @@ public class Lecture {
 
 		case SSTOP:
 			this.traitementFermetureSession(logLine);
+			break;
+			
+		default:
 			break;
 		}
 	}

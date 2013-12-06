@@ -9,9 +9,9 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 
-import nl.bitwalker.useragentutils.Browser;
-import nl.bitwalker.useragentutils.UserAgent;
-import nl.bitwalker.useragentutils.Version;
+import eu.bitwalker.useragentutils.Browser;
+import eu.bitwalker.useragentutils.UserAgent;
+import eu.bitwalker.useragentutils.Version;
 
 import org.springframework.util.Assert;
 
