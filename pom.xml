@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.esco.stats</groupId>
 	<artifactId>indicators-backend</artifactId>
-	<version>0.0.17-SNAPSHOT</version>
+	<version>1.0.0</version>
 
 	<dependencies>
 
@@ -55,18 +55,10 @@
 			<version>1.5</version>
 		</dependency>
 
-    <!-- 
-		<dependency>
-			<groupId>nl.bitwalker</groupId>
-			<artifactId>UserAgentUtils</artifactId>
-			<version>1.6</version>
-		</dependency>
-		 -->
-		 
 		<dependency>
 		   <groupId>bitwalker</groupId>
 		   <artifactId>UserAgentUtils</artifactId>
-		   <version>1.11</version>
+		   <version>1.12</version>
 		</dependency>
 		
 		<dependency>

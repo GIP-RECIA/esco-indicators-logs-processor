@@ -25,7 +25,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 
 @RunWith(value=SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations={"classpath:localDb/db-context.xml"})
+@ContextConfiguration(locations={"classpath:memoryDb/db-context.xml"})
 public class TraitementFinMoisSemaineTest {
 
 	/** Fixed oldest stat Date to 02/12/2012. */

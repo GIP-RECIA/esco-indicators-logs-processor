@@ -422,7 +422,7 @@ public class LectureTest {
 
 	@Test(expected=FileNotFoundException.class)
 	public void fileNotFoundTest() throws Exception {
-		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
+		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012-00.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		this.lecture.informations(statsFilePath, processMode, true);
@@ -430,7 +430,7 @@ public class LectureTest {
 
 	@Test
 	public void fileNotFoundTest2() throws Exception {
-		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
+		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012-00.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
@@ -440,7 +440,7 @@ public class LectureTest {
 
 	@Test
 	public void dailyProcessingDryRunTest() throws Exception {
-		String statsFilePath = "src/test/resources/logsalire/2013/02/2013-02-10.log";
+		String statsFilePath = "src/test/resources/logsalire/2013-02-10.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
@@ -449,9 +449,9 @@ public class LectureTest {
 	}
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void monthlyProcessingDryRunTest() throws Exception {
-		String statsFilePath = "src/test/resources/logsalire/2012/09/2012-09.log";
+		String statsFilePath = "src/test/resources/logsalire/2013-12.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.MONTHLY;
 
 		this.lecture.traitementLog(statsFilePath, processMode, true);

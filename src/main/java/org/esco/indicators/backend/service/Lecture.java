@@ -125,8 +125,9 @@ public class Lecture {
 
 	protected Lecture(final JDBC pJdbc) throws ClassNotFoundException, SQLException {
 		Assert.notNull(pJdbc, "No JDBC object provided !");
-		this.jdbc = new JDBC();
-
+		//this.jdbc = new JDBC();
+		this.jdbc = pJdbc;
+		
 		Assert.notNull(this.config, "No configuration provided !");
 		this.logTypeRowId = this.config.getLogRow(Config.LOG_ROW_TYPE);
 		this.defaultSessionTime = Float.parseFloat(this.config.getConfigValue(Config.CONF_DEFAULT_SESSION_TIME));
@@ -929,7 +930,12 @@ public class Lecture {
 			throw new LogLineToIgnore("User profil (objectClass) unknown from configuration !");
 		}
 
-		this.processUserAgentStats(logLine);
+		try {
+			this.processUserAgentStats(logLine);
+		} catch (Exception e) {
+			// If an exception is thrown while parsing UA, ignore the UA.
+			LOGGER.warn(String.format("UserAgent of ligne #%1$d [%2$s] cannot be processed !", numlignelog, ligne), e);
+		}
 
 		return logLine;
 	}
@@ -939,7 +945,7 @@ public class Lecture {
 	 * 
 	 * @param logLine
 	 */
-	protected void processUserAgentStats(final LogLine logLine) {
+	protected void processUserAgentStats(final LogLine logLine) throws Exception {
 		final UserAgent userAgent = logLine.getUserAgent();
 		if (userAgent != null) {
 			// Calculate brower id : browserName( - browserVersion)
