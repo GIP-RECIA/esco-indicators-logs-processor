@@ -24,6 +24,7 @@ import org.esco.indicators.backend.model.SstartValue;
 import org.esco.indicators.backend.model.TypeStatEnum;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +96,7 @@ public class LectureTest {
 		attendue.setNbacces(1);
 		attendue.setObjectClass("ENTEleve");
 		attendue.setPortail("netocentre3");
-		attendue.setService("Mes notes/Pronote");
+		attendue.setService("VieScolaire");
 		attendue.setUai("0450062Y");
 		attendue.setUid("F11007ti");
 		attendue.setUiduPortal("18474");
@@ -421,7 +422,7 @@ public class LectureTest {
 
 	@Test(expected=FileNotFoundException.class)
 	public void fileNotFoundTest() throws Exception {
-		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
+		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012-00.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		this.lecture.informations(statsFilePath, processMode, true);
@@ -429,7 +430,7 @@ public class LectureTest {
 
 	@Test
 	public void fileNotFoundTest2() throws Exception {
-		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012/00/2012-00.log";
+		String statsFilePath = "/indicateurs_usages/src/test/resources/logsalire/2012-00.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
@@ -439,7 +440,7 @@ public class LectureTest {
 
 	@Test
 	public void dailyProcessingDryRunTest() throws Exception {
-		String statsFilePath = "src/test/resources/logsalire/2013/02/2013-02-10.log";
+		String statsFilePath = "src/test/resources/logsalire/2013-02-10.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.DAILY;
 
 		boolean ok = this.lecture.traitementLog(statsFilePath, processMode, true);
@@ -447,9 +448,10 @@ public class LectureTest {
 		Assert.assertTrue("Traitement KO !", ok);
 	}
 
-	@Test(timeout=1)
+	@Test
+	//@Ignore
 	public void monthlyProcessingDryRunTest() throws Exception {
-		String statsFilePath = "src/test/resources/logsalire/2012/09/2012-09.log";
+		String statsFilePath = "src/test/resources/logsalire/2013-12.log";
 		ProcessingModeEnum processMode = ProcessingModeEnum.MONTHLY;
 
 		this.lecture.traitementLog(statsFilePath, processMode, true);

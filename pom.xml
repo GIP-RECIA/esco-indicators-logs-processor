@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.esco.stats</groupId>
 	<artifactId>indicators-backend</artifactId>
-	<version>0.0.16-SNAPSHOT</version>
+	<version>1.0.0</version>
 
 	<dependencies>
 
@@ -56,11 +56,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>nl.bitwalker</groupId>
-			<artifactId>UserAgentUtils</artifactId>
-			<version>1.6</version>
+		   <groupId>bitwalker</groupId>
+		   <artifactId>UserAgentUtils</artifactId>
+		   <version>1.12</version>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
@@ -216,6 +216,11 @@
 		<repository>
 			<id>esco</id>
 			<url>http://www.esco-portail.org/nexus/content/groups/public/</url>
+		</repository>
+		
+		<repository>
+		  <id>bitwalker.user-agent-utils.mvn.repo</id>
+		  <url>https://raw.github.com/HaraldWalker/user-agent-utils/mvn-repo/</url>
 		</repository>
 	</repositories>
 </project>
