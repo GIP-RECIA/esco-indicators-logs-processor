@@ -19,8 +19,8 @@ SYS_PROPS="-Dfile.encoding=UTF-8 -Duser.language=fr -Duser.contry=FR -Dlog4j.con
 # Choix du fichier mensuel de stats
 STATS_FILE="$1"
 if [[ -z "$STATS_FILE"  ]]; then
-# No file in arg so choose last cleaned log file (sorted by name => younger file)
-STATS_FILE=$(ls -dr1 /home/esco/indicateurs/data/in/cleaned_logs/* | head -1)
+# No file in arg so choose last cleaned log file (sorted by time => younger file)
+STATS_FILE=$(ls -t1 /home/esco/indicateurs/data/in/cleaned_logs/* | head -1)
 fi
 
 # Context dir
