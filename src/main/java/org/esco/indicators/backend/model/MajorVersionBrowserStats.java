@@ -134,7 +134,19 @@ public class MajorVersionBrowserStats implements Comparable<MajorVersionBrowserS
 
 		@Override
 		public int compare(final Version v1, final Version v2) {
-			return v1.getMinorVersion().compareTo(v2.getMinorVersion());
+			if (v1 == null) {
+				if (v2 == null) {
+					return 0;
+				}
+				return 1;
+			}
+			if (v2 == null) return -1;
+			String minor = v1.getMinorVersion();
+			if (minor == null) {
+				if (v2.getMajorVersion() == null) return 0;
+				return 1;
+			}
+			return minor.compareTo(v2.getMinorVersion());
 		}
 
 	}

@@ -26,7 +26,17 @@
 			<source>batch_stats.sh</source>
 			<destName>batch_stats.sh</destName>
 			<fileMode>0744</fileMode>
-		</file>		
+		</file>	
+		<file>
+			<source>batch_stats_splited.sh</source>
+			<destName>batch_stats_splited.sh</destName>
+			<fileMode>0744</fileMode>
+		</file>	
+		<file>
+			<source>splitMois.sh</source>
+			<destName>splitMois.sh</destName>
+			<fileMode>0744</fileMode>
+		</file>	
 	</files>
 	
 	<fileSets>
